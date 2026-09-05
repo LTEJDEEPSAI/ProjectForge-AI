@@ -97,7 +97,7 @@ Respond ONLY with a valid JSON object in the following format:
 }`;
 
     const response = await withRetry(() => openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: req.body.model || 'gpt-4o-mini',
       messages: [{ role: 'system', content: prompt }],
       response_format: { type: 'json_object' }
     }));
@@ -138,7 +138,7 @@ Respond ONLY with a valid JSON object in the following format:
 }`;
 
     const response = await withRetry(() => openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: req.body.model || 'gpt-4o-mini',
       messages: [{ role: 'system', content: prompt }],
       response_format: { type: 'json_object' }
     }));
@@ -177,7 +177,7 @@ Respond ONLY with a valid JSON object in the following format:
 }`;
 
     const response = await withRetry(() => openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: req.body.model || 'gpt-4o-mini',
       messages: [{ role: 'system', content: prompt }],
       response_format: { type: 'json_object' }
     }));
@@ -219,7 +219,7 @@ INSTRUCTIONS:
     ];
 
     const response = await withRetry(() => openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: req.body.model || 'gpt-4o',
       messages: messages as any
     }));
     
@@ -249,7 +249,7 @@ Respond ONLY with a valid JSON object in the following format:
 }`;
 
     const response = await withRetry(() => openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: req.body.model || 'gpt-4o-mini',
       messages: [{ role: 'system', content: prompt }],
       response_format: { type: 'json_object' }
     }));

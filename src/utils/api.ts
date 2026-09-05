@@ -1,6 +1,16 @@
 export async function fetchApi(url: string, options?: RequestInit) {
+    // Inject selected model if body is JSON
+  let modifiedOptions = { ...options };
+  if (modifiedOptions?.body && typeof modifiedOptions.body === 'string') {
+    try {
+      const parsed = JSON.parse(modifiedOptions.body);
+      const selectedModel = localStorage.getItem('selectedModel') || 'gpt-4o-mini';
+      parsed.model = selectedModel;
+      modifiedOptions.body = JSON.stringify(parsed);
+    } catch(e) {}
+  }
   const res = await fetch(url, {
-    ...options,
+    ...modifiedOptions,
     headers: {
       'Content-Type': 'application/json',
       ...options?.headers,

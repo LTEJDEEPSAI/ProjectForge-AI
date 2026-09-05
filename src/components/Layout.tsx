@@ -1,9 +1,19 @@
 
+import { useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Pickaxe, LogOut, Lightbulb, User as UserIcon, LayoutDashboard, Wrench, AlertCircle, X } from 'lucide-react';
 
 export function Layout() {
+
+  const [selectedModel, setSelectedModel] = useState(localStorage.getItem('selectedModel') || 'gpt-4o-mini');
+  
+  const handleModelChange = (e: any) => {
+    const val = e.target.value;
+    setSelectedModel(val);
+    localStorage.setItem('selectedModel', val);
+  };
+
   const { user, login, logout, authError, clearAuthError } = useAuth();
   const navigate = useNavigate();
 
@@ -66,6 +76,23 @@ export function Layout() {
                   <Link to="/improve" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5">
                     <Wrench className="w-4 h-4" /> Improve Project
                   </Link>
+                  
+                  <select 
+                    value={selectedModel} 
+                    onChange={handleModelChange}
+                    className="text-sm font-medium text-neutral-600 bg-neutral-100 border border-neutral-200 rounded-md px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="gpt-4o-mini">gpt-4o-mini</option>
+                    <option value="gpt-4o">gpt-4o</option>
+                    <option value="gpt-5.4-mini">gpt-5.4-mini</option>
+                    <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                    <option value="gpt-5-mini">gpt-5-mini</option>
+                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                    <option value="gpt-4.1-nano">gpt-4.1-nano</option>
+                    <option value="gpt-5.4-nano">gpt-5.4-nano</option>
+                    <option value="gpt-5-nano">gpt-5-nano</option>
+                    <option value="gpt-5.6-luna">gpt-5.6-luna</option>
+                  </select>
                   <div className="h-6 w-px bg-neutral-300 mx-2" />
                   <div className="flex items-center space-x-3">
                     <span className="text-sm text-neutral-500 hidden sm:block">{user.email}</span>
