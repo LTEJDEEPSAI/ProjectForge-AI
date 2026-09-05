@@ -36,111 +36,166 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4, baseDelayMs = 
   throw new Error("Unreachable");
 }
 
+function extractJson(content: string) {
+  try {
+    const match = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (match) return JSON.parse(match[1].trim());
+    return JSON.parse(content.trim());
+  } catch (e) {
+    console.error("JSON parsing failed for content:", content);
+    throw new Error("AI returned malformed data.");
+  }
+}
+
 apiRouter.post('/generate-projects', async (req, res) => {
   try {
     const { formData } = req.body;
-    const prompt = `As an expert AI mentor for university final-year projects, generate 3 to 5 realistic, innovative, and highly specific project ideas based on the student's profile:
-    Branch/Specialization: ${formData.branch}
-    Interests: ${formData.interests}
-    Technical Skills: ${formData.skills}
-    Skill Proficiency: ${formData.proficiency}
-    Career Interests: ${formData.career}
-    Preferred Technologies: ${formData.technologies}
-    Team Size: ${formData.teamSize}
-    Time Available: ${formData.timeAvailable}
-    Budget: ${formData.budget}
-    Difficulty: ${formData.difficulty}
-    Domain: ${formData.domain}
-    
-    Generate EXACTLY 5 highly personalized project ideas that solve real problems. Do not generate generic ideas. 
-    Respond ONLY with a valid JSON object in the following format:
+    const prompt = `You are an expert final-year project mentor, software architect, and technical evaluator.
+Your job is to recommend exactly 5 projects that are genuinely useful, technically realistic, achievable within the student's constraints, and aligned with their skills and career goals.
+
+STUDENT PROFILE:
+Branch/Specialization: ${formData.branch}
+Interests: ${formData.interests}
+Technical Skills: ${formData.skills}
+Skill Proficiency: ${formData.proficiency}
+Career Interests: ${formData.career}
+Preferred Technologies: ${formData.technologies}
+Team Size: ${formData.teamSize}
+Time Available: ${formData.timeAvailable}
+Budget: ${formData.budget}
+Difficulty: ${formData.difficulty}
+Domain: ${formData.domain}
+
+CONSTRAINTS:
+1. Generate EXACTLY 5 highly personalized, distinct project ideas.
+2. Avoid generic ideas (e.g., "AI Chatbot", "Student Management System") unless the idea has a genuinely differentiated problem and target user.
+3. Every idea must strictly align with the student's available time, budget, team size, and skill proficiency. Never recommend a project that takes 6 months if they only have 2 months.
+4. Distinguish between technologies they already know (from their profile) and ones they need to learn.
+
+Respond ONLY with a valid JSON object in the following format:
+{
+  "ideas": [
     {
-      "ideas": [
-        {
-          "title": "...", "concept": "...", "problemStatement": "...", "targetUsers": "...", 
-          "proposedSolution": "...", "features": ["..."], "innovation": "...", 
-          "techStack": ["..."], "skills": ["..."], "difficulty": "...", 
-          "duration": "...", "cost": "...", "aiOpps": "...", "outcome": "...", "challenges": "..."
-        }
-      ]
-    }`;
+      "title": "...", "concept": "...", "problemStatement": "...", "targetUsers": "...", 
+      "proposedSolution": "...", "features": ["..."], "innovation": "...", 
+      "techStack": ["..."], "skills": ["..."], "difficulty": "...", 
+      "duration": "...", "cost": "...", "aiOpps": "...", "outcome": "...", "challenges": "..."
+    }
+  ]
+}`;
 
     const response = await withRetry(() => openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'system', content: prompt }],
       response_format: { type: 'json_object' }
     }));
     
-    const ideasData = JSON.parse(response.choices[0].message.content || '{"ideas": []}');
+    const ideasData = extractJson(response.choices[0].message.content || '{"ideas": []}');
+    if (!ideasData.ideas || !Array.isArray(ideasData.ideas) || ideasData.ideas.length !== 5) {
+      throw new Error("AI failed to generate exactly 5 ideas.");
+    }
     res.json({ success: true, ideas: ideasData.ideas });
   } catch (error: any) {
     console.error('Error generating projects:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to generate projects' });
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to generate projects', code: 'GENERATE_FAILED' } });
   }
 });
 
 apiRouter.post('/evaluate-project', async (req, res) => {
   try {
-    const { project } = req.body;
-    const prompt = `Perform a harsh but constructive reality check on this final-year project idea. 
-    Identify risks, unrealistic assumptions, and evaluate strictly based on technical feasibility for a final year student.
-    Project details: ${JSON.stringify(project)}
-    
-    Respond ONLY with a valid JSON object in the following format:
-    {
-      "feasibilityScore": 0, "innovationScore": 0, "complexityScore": 0, "costScore": 0, "timeSuitability": 0, "skillMatchScore": 0,
-      "explanation": "...", "mentorVerdict": "...", "risks": ["..."], "skillGaps": ["..."], "recommendations": ["..."], "realisticMvpScope": "..."
-    }`;
+    const { project, profile } = req.body;
+    const prompt = `You are a strict technical evaluator. Perform a reality check on this project idea based strictly on the student's profile constraints.
+
+STUDENT PROFILE:
+${JSON.stringify(profile)}
+
+PROJECT IDEA:
+${JSON.stringify(project)}
+
+INSTRUCTIONS:
+Calculate scores from 0 to 100 logically based on the delta between the student's profile and the project's requirements.
+- If the project requires ML but they only know HTML/CSS, skillMatchScore MUST decrease.
+- If the project normally requires 6 months but they have 1 month, timeSuitability MUST decrease.
+- If the project requires expensive APIs but their budget is 0, costScore MUST decrease.
+Be honest. Do not fabricate precision. Explain your reasoning clearly.
+
+Respond ONLY with a valid JSON object in the following format:
+{
+  "feasibilityScore": 0, "innovationScore": 0, "complexityScore": 0, "costScore": 0, "timeSuitability": 0, "skillMatchScore": 0,
+  "explanation": "...", "mentorVerdict": "...", "risks": ["..."], "skillGaps": ["..."], "recommendations": ["..."], "realisticMvpScope": "..."
+}`;
 
     const response = await withRetry(() => openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'system', content: prompt }],
       response_format: { type: 'json_object' }
     }));
     
-    const evaluation = JSON.parse(response.choices[0].message.content || '{}');
+    const evaluation = extractJson(response.choices[0].message.content || '{}');
     res.json({ success: true, evaluation });
   } catch (error: any) {
     console.error('Error evaluating project:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to evaluate project' });
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to evaluate project', code: 'EVALUATE_FAILED' } });
   }
 });
 
 apiRouter.post('/generate-blueprint', async (req, res) => {
   try {
-    const { project } = req.body;
-    const prompt = `Create a comprehensive, production-ready project blueprint for this final-year project idea:
-    ${JSON.stringify(project)}
-    
-    Include all architectural decisions, API requirements, and a detailed 8-step roadmap (Research, Requirements, Architecture, Development, Testing, Deployment, Documentation, Final Presentation).
-    
-    Respond ONLY with a valid JSON object in the following format:
-    {
-      "overview": "...", "problemDefinition": "...", "objectives": ["..."], "targetUsers": "...",
-      "functionalRequirements": ["..."], "nonFunctionalRequirements": ["..."], "recommendedArchitecture": "...",
-      "databaseDesign": "...", "apiRequirements": ["..."], "authenticationApproach": "...", "technologyStack": ["..."],
-      "developmentRoadmap": [{"phase": "...", "tasks": ["..."]}], "testingStrategy": "...",
-      "deploymentStrategy": "...", "futureImprovements": ["..."]
-    }`;
+    const { project, profile } = req.body;
+    const prompt = `You are a software architect. Create a comprehensive, production-ready project blueprint specifically for this final-year project.
+
+STUDENT PROFILE:
+${JSON.stringify(profile)}
+
+PROJECT DETAILS:
+${JSON.stringify(project)}
+
+INSTRUCTIONS:
+1. The blueprint must logically derive from the project and strictly fit within the student's profile constraints (time, budget, team size).
+2. Recommend technologies based on skills, constraints, and maintainability. For every major technology recommendation, explain "WHY THIS TECHNOLOGY".
+3. Generate a realistic 8-step roadmap. The total estimated roadmap duration must be consistent with the student's available project duration (${profile?.timeAvailable || 'unknown'}).
+
+Respond ONLY with a valid JSON object in the following format:
+{
+  "overview": "...", "problemDefinition": "...", "objectives": ["..."], "targetUsers": "...",
+  "functionalRequirements": ["..."], "nonFunctionalRequirements": ["..."], "recommendedArchitecture": "...",
+  "databaseDesign": "...", "apiRequirements": ["..."], "authenticationApproach": "...", "technologyStack": ["..."],
+  "developmentRoadmap": [{"phase": "...", "tasks": ["..."], "estimatedTime": "...", "deliverable": "..."}], "testingStrategy": "...",
+  "deploymentStrategy": "...", "futureImprovements": ["..."]
+}`;
 
     const response = await withRetry(() => openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'system', content: prompt }],
       response_format: { type: 'json_object' }
     }));
     
-    const blueprint = JSON.parse(response.choices[0].message.content || '{}');
+    const blueprint = extractJson(response.choices[0].message.content || '{}');
     res.json({ success: true, blueprint });
   } catch (error: any) {
     console.error('Error generating blueprint:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to generate blueprint' });
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to generate blueprint', code: 'BLUEPRINT_FAILED' } });
   }
 });
 
 apiRouter.post('/mentor-chat', async (req, res) => {
   try {
-    const { message, history, projectContext } = req.body;
-    const systemInstruction = `You are an expert project mentor guiding a student building this project: ${JSON.stringify(projectContext)}. Keep your answers concise, practical, and highly technical. Guide them effectively.`;
+    const { message, history, projectContext, profile } = req.body;
+    const systemInstruction = `You are an expert project mentor and senior developer guiding a student.
+    
+STUDENT PROFILE:
+${JSON.stringify(profile)}
+
+SELECTED PROJECT & ROADMAP:
+${JSON.stringify(projectContext)}
+
+INSTRUCTIONS:
+1. Maintain context of their profile, project requirements, and technology stack.
+2. Answer specifically for THEIR project and stack. Do not behave like a generic AI.
+3. Keep your answers concise, practical, and highly technical.
+4. If they ask for something unnecessarily complex, tell them and suggest a simpler implementation.
+5. If they propose a feature outside the MVP, explain whether it should be postponed.
+6. Distinguish between KNOWN facts and recommendations. Do not invent APIs or statistics.`;
     
     const messages = [
       { role: 'system', content: systemInstruction },
@@ -159,34 +214,39 @@ apiRouter.post('/mentor-chat', async (req, res) => {
     res.json({ success: true, reply: response.choices[0].message.content });
   } catch (error: any) {
     console.error('Error in mentor chat:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to respond to chat' });
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to respond to chat', code: 'MENTOR_FAILED' } });
   }
 });
 
 apiRouter.post('/improve-project', async (req, res) => {
   try {
     const { description } = req.body;
-    const prompt = `Analyze this existing project idea or description: "${description}".
-    Identify its weaknesses, missing features, technical risks, scalability issues, security concerns, accessibility issues, ways to improve innovation, recommended technology changes, and suggest a realistic MVP scope.
+    const prompt = `You are a rigorous technical evaluator. Analyze this existing project idea: "${description}".
     
-    Respond ONLY with a valid JSON object in the following format:
-    {
-      "weaknesses": ["..."], "missingFeatures": ["..."], "technicalRisks": ["..."], 
-      "scalabilityIssues": ["..."], "securityConcerns": ["..."], "accessibilityIssues": ["..."],
-      "innovationImprovements": ["..."], "techChanges": ["..."], "realisticMvpScope": "..."
-    }`;
+INSTRUCTIONS:
+Do not automatically praise it. Be honest.
+Identify its strengths, weaknesses, feasibility problems, technical risks, security issues, missing functionality, unnecessary functionality, scalability concerns, accessibility concerns, and ways to improve innovation.
+If the idea is unrealistic, explicitly explain WHY.
+Then propose a realistic MVP scope.
+
+Respond ONLY with a valid JSON object in the following format:
+{
+  "weaknesses": ["..."], "missingFeatures": ["..."], "technicalRisks": ["..."], 
+  "scalabilityIssues": ["..."], "securityConcerns": ["..."], "accessibilityIssues": ["..."],
+  "innovationImprovements": ["..."], "techChanges": ["..."], "realisticMvpScope": "..."
+}`;
 
     const response = await withRetry(() => openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'system', content: prompt }],
       response_format: { type: 'json_object' }
     }));
     
-    const improvement = JSON.parse(response.choices[0].message.content || '{}');
+    const improvement = extractJson(response.choices[0].message.content || '{}');
     res.json({ success: true, improvement });
   } catch (error: any) {
     console.error('Error improving project:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to analyze project' });
+    res.status(500).json({ success: false, error: { message: error.message || 'Failed to analyze project', code: 'IMPROVE_FAILED' } });
   }
 });
 

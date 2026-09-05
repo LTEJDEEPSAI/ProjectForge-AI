@@ -35,6 +35,7 @@ export interface ProjectIdea {
   roadmapProgress?: Record<string, boolean>;
   createdAt?: number;
   updatedAt?: number;
+  profile?: OnboardingData;
 }
 
 export interface RealityCheck {

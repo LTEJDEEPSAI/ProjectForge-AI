@@ -44,6 +44,7 @@ export function Onboarding() {
   const [generatedIdeas, setGeneratedIdeas] = useState<ProjectIdea[]>([]);
   const [selectingIdea, setSelectingIdea] = useState<string | null>(null);
   const [selectError, setSelectError] = useState<string | null>(null);
+  const [profileData, setProfileData] = useState<any>(null);
 
   const { register, handleSubmit, formState: { errors }, trigger } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -65,6 +66,7 @@ export function Onboarding() {
   };
 
   const onSubmit = async (data: FormData) => {
+    setProfileData(data);
     setGenerating(true);
     setGenerateError(null);
     try {
@@ -88,15 +90,16 @@ export function Onboarding() {
     setSelectError(null);
     try {
       // 1. Reality Check
-      const evalResult = await fetchApi('/api/evaluate-project', { method: 'POST', body: JSON.stringify({ project: idea }) });
+      const evalResult = await fetchApi('/api/evaluate-project', { method: 'POST', body: JSON.stringify({ project: idea, profile: profileData }) });
 
       // 2. Blueprint
-      const bpResult = await fetchApi('/api/generate-blueprint', { method: 'POST', body: JSON.stringify({ project: idea }) });
+      const bpResult = await fetchApi('/api/generate-blueprint', { method: 'POST', body: JSON.stringify({ project: idea, profile: profileData }) });
 
       // 3. Save to Firestore
       const projectData = {
         ...idea,
         userId: user.uid,
+        profile: profileData,
         realityCheck: evalResult.evaluation,
         blueprint: bpResult.blueprint,
         roadmapProgress: {},

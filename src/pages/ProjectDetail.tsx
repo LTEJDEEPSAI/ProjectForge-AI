@@ -89,7 +89,7 @@ export function ProjectDetail() {
       await addDoc(collection(db, 'projects', id, 'messages'), newUserMsg);
       
       // 2. Call API
-      const data = await fetchApi('/api/mentor-chat', { method: 'POST', body: JSON.stringify({ message: userMsg, history: messages, projectContext: project }) });
+      const data = await fetchApi('/api/mentor-chat', { method: 'POST', body: JSON.stringify({ message: userMsg, history: messages, projectContext: project, profile: project.profile }) });
       
       // 3. Save model msg to DB
       const modelMsg: MentorMessage = {

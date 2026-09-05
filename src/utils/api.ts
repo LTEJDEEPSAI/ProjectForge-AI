@@ -17,7 +17,7 @@ export async function fetchApi(url: string, options?: RequestInit) {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.error || data.message || `API Error: ${res.status} ${res.statusText}`);
+    throw new Error(data.error?.message || data.error || data.message || `API Error: ${res.status} ${res.statusText}`);
   }
 
   return data;
