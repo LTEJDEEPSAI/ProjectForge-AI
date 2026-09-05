@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ProjectIdea } from '../types';
 import { Link } from 'react-router-dom';
-import { Pickaxe, ArrowRight, Lightbulb, TrendingUp } from 'lucide-react';
+import { Pickaxe, ArrowRight, Lightbulb, TrendingUp, Trash2, Clock, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function Dashboard() {
@@ -37,6 +37,16 @@ export function Dashboard() {
 
     fetchProjects();
   }, [user]);
+
+  const deleteProject = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this project?')) return;
+    try {
+      await deleteDoc(doc(db, 'projects', id));
+      setProjects(projects.filter(p => p.id !== id));
+    } catch (err) {
+      console.error('Error deleting project', err);
+    }
+  };
 
   if (!user) {
     return (
@@ -101,16 +111,34 @@ export function Dashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project, idx) => (
+          {projects.map((project, idx) => {
+            let totalTasks = 0;
+            let completedTasks = 0;
+            project.blueprint?.developmentRoadmap?.forEach((phase, i) => {
+              phase.tasks.forEach((_, j) => {
+                totalTasks++;
+                if (project.roadmapProgress?.[`${i}-${j}`]) completedTasks++;
+              });
+            });
+            const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            return (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
               key={project.id} 
-              className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col"
+              className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col relative"
             >
+              <button 
+                onClick={() => project.id && deleteProject(project.id)}
+                className="absolute top-4 right-4 p-2 bg-white rounded-full text-neutral-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all z-10 border border-neutral-100 shadow-sm"
+                aria-label="Delete project"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
               <div className="p-6 flex-1 flex flex-col">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-3 pr-8">
                   <span className="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
                     {project.difficulty}
                   </span>
@@ -127,7 +155,7 @@ export function Dashboard() {
                   {project.concept}
                 </p>
                 
-                <div className="flex flex-wrap gap-1.5 mb-5 mt-auto">
+                <div className="flex flex-wrap gap-1.5 mb-4 mt-auto">
                   {project.techStack?.slice(0, 3).map((tech, i) => (
                     <span key={i} className="text-xs text-neutral-500 bg-neutral-100 px-2 py-1 rounded-md border border-neutral-200">
                       {tech}
@@ -140,15 +168,27 @@ export function Dashboard() {
                   )}
                 </div>
                 
+                {totalTasks > 0 && (
+                  <div className="mb-5 bg-neutral-50 p-3 rounded-lg border border-neutral-100">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-xs font-semibold text-neutral-600 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Progress</span>
+                      <span className="text-xs font-bold text-neutral-900">{progressPercent}%</span>
+                    </div>
+                    <div className="w-full bg-neutral-200 rounded-full h-1.5">
+                      <div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${progressPercent}%` }}></div>
+                    </div>
+                  </div>
+                )}
+                
                 <Link 
                   to={`/project/${project.id}`} 
-                  className="mt-auto block w-full text-center bg-neutral-50 hover:bg-neutral-100 text-neutral-900 font-semibold py-2.5 rounded-lg border border-neutral-200 transition-colors"
+                  className="mt-auto block w-full text-center bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-2.5 rounded-lg border border-blue-100 transition-colors"
                 >
-                  View Details
+                  Continue Project
                 </Link>
               </div>
             </motion.div>
-          ))}
+          )})}
         </div>
       )}
     </div>

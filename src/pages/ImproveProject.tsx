@@ -10,6 +10,7 @@ export function ImproveProject() {
   const { user } = useAuth();
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<ImprovementAnalysis | null>(null);
 
   if (!user) return <Navigate to="/" />;
@@ -19,6 +20,7 @@ export function ImproveProject() {
     if (!description.trim()) return;
     
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/improve-project', {
         method: 'POST',
@@ -26,10 +28,11 @@ export function ImproveProject() {
         body: JSON.stringify({ description }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to analyze project.');
       setAnalysis(data.improvement);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to analyze project.');
+      setError(err.message || 'Failed to analyze project.');
     } finally {
       setLoading(false);
     }
@@ -43,6 +46,15 @@ export function ImproveProject() {
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm mb-8">
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-red-800">Analysis Failed</h4>
+              <p className="text-sm text-red-600 mt-1">{error}</p>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleAnalyze}>
           <label className="block text-sm font-bold text-neutral-700 mb-2">Project Description</label>
           <textarea

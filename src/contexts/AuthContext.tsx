@@ -6,8 +6,10 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  authError: string | null;
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  clearAuthError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,6 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -45,11 +48,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async () => {
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed', error);
+      if (error?.code === 'auth/unauthorized-domain') {
+        setAuthError('unauthorized-domain');
+      } else {
+        setAuthError(error?.message || 'Login failed. Please try again.');
+      }
     }
   };
 
@@ -60,9 +69,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Logout failed', error);
     }
   };
+  
+  const clearAuthError = () => setAuthError(null);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, authError, login, logout, clearAuthError }}>
       {!loading && children}
     </AuthContext.Provider>
   );

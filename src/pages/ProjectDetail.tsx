@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate, useParams } from 'react-router-dom';
-import { doc, getDoc, collection, query, orderBy, getDocs, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, getDocs, addDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ProjectIdea, MentorMessage } from '../types';
-import { CheckCircle2, AlertTriangle, ArrowRight, TrendingUp, Lightbulb, Pickaxe, BrainCircuit, MessageSquare, Loader2, Send } from 'lucide-react';
+import { CheckCircle2, Circle, AlertTriangle, ArrowRight, TrendingUp, Lightbulb, Pickaxe, BrainCircuit, MessageSquare, Loader2, Send } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { cn } from '../lib/utils';
 
@@ -18,6 +18,26 @@ export function ProjectDetail() {
   const [chatLoading, setChatLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'reality' | 'blueprint' | 'mentor'>('overview');
+
+  const toggleTaskComplete = async (phaseIndex: number, taskIndex: number) => {
+    if (!project || !id) return;
+    const taskKey = `${phaseIndex}-${taskIndex}`;
+    const newProgress = {
+      ...project.roadmapProgress,
+      [taskKey]: !project.roadmapProgress?.[taskKey]
+    };
+    
+    setProject({ ...project, roadmapProgress: newProgress });
+
+    try {
+      await updateDoc(doc(db, 'projects', id), {
+        roadmapProgress: newProgress
+      });
+    } catch (error) {
+      console.error('Failed to update task progress', error);
+      // Rollback would go here in production
+    }
+  };
 
   useEffect(() => {
     if (!user || !id) return;
@@ -83,6 +103,10 @@ export function ProjectDetail() {
       });
       const data = await res.json();
       
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to get mentor response');
+      }
+      
       // 3. Save model msg to DB
       const modelMsg: MentorMessage = {
         role: 'model',
@@ -92,8 +116,14 @@ export function ProjectDetail() {
       await addDoc(collection(db, 'projects', id, 'messages'), modelMsg);
       setMessages(prev => [...prev, modelMsg]);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      const errorMsg: MentorMessage = {
+        role: 'model',
+        content: `Sorry, I encountered an error: ${err.message}. Please try asking again.`,
+        createdAt: Date.now()
+      };
+      setMessages(prev => [...prev, errorMsg]);
     } finally {
       setChatLoading(false);
     }
@@ -171,18 +201,47 @@ export function ProjectDetail() {
             </div>
             <section className="bg-blue-50 border border-blue-100 p-5 rounded-xl">
               <h3 className="text-blue-900 font-bold mb-2 flex items-center gap-2"><TrendingUp className="w-5 h-5"/> Evaluation Summary</h3>
-              <p className="text-blue-800 text-sm leading-relaxed">{project.realityCheck.explanation}</p>
+              <p className="text-blue-800 text-sm leading-relaxed mb-4">{project.realityCheck.explanation}</p>
+              
+              {project.realityCheck.mentorVerdict && (
+                <>
+                  <h4 className="text-blue-900 font-bold mb-1 text-sm">Mentor's Verdict</h4>
+                  <p className="text-blue-800 text-sm leading-relaxed italic border-l-4 border-blue-300 pl-3">{project.realityCheck.mentorVerdict}</p>
+                </>
+              )}
             </section>
-            <section>
-              <h3 className="text-lg font-bold text-neutral-900 mb-3 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500"/> Project Risks</h3>
-              <ul className="space-y-2">
-                {project.realityCheck.risks?.map((r, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
-                    <span className="text-amber-500 font-bold mt-0.5">•</span> {r}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            
+            {project.realityCheck.realisticMvpScope && (
+              <section className="bg-emerald-50 border border-emerald-100 p-5 rounded-xl">
+                <h3 className="text-emerald-900 font-bold mb-2">Realistic MVP Scope</h3>
+                <p className="text-emerald-800 text-sm leading-relaxed">{project.realityCheck.realisticMvpScope}</p>
+              </section>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <section>
+                <h3 className="text-lg font-bold text-neutral-900 mb-3 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-amber-500"/> Project Risks</h3>
+                <ul className="space-y-2">
+                  {project.realityCheck.risks?.map((r, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
+                      <span className="text-amber-500 font-bold mt-0.5">•</span> {r}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              
+              <section>
+                <h3 className="text-lg font-bold text-neutral-900 mb-3 flex items-center gap-2"><BrainCircuit className="w-5 h-5 text-purple-500"/> Skill Gaps</h3>
+                <ul className="space-y-2">
+                  {project.realityCheck.skillGaps?.map((r, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
+                      <span className="text-purple-500 font-bold mt-0.5">•</span> {r}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </div>
+            
             <section>
               <h3 className="text-lg font-bold text-neutral-900 mb-3 flex items-center gap-2"><Lightbulb className="w-5 h-5 text-emerald-500"/> Recommendations</h3>
               <ul className="space-y-2">
@@ -208,12 +267,28 @@ export function ProjectDetail() {
                     </div>
                     <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white border border-neutral-200 p-4 rounded-xl shadow-sm">
                       <h4 className="font-bold text-neutral-900 mb-2">{phase.phase}</h4>
-                      <ul className="space-y-1">
-                        {phase.tasks.map((t, j) => (
-                          <li key={j} className="text-xs text-neutral-600 flex items-start gap-1.5">
-                            <span className="text-blue-500 mt-0.5">›</span> {t}
-                          </li>
-                        ))}
+                      <ul className="space-y-2">
+                        {phase.tasks.map((t, j) => {
+                          const isCompleted = project.roadmapProgress?.[`${i}-${j}`];
+                          return (
+                            <li key={j} className="text-sm flex items-start gap-2">
+                              <button 
+                                onClick={() => toggleTaskComplete(i, j)}
+                                className="mt-0.5 shrink-0 text-neutral-400 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full"
+                                aria-label={isCompleted ? "Mark task incomplete" : "Mark task complete"}
+                              >
+                                {isCompleted ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                ) : (
+                                  <Circle className="w-4 h-4" />
+                                )}
+                              </button>
+                              <span className={cn("text-neutral-700 transition-all duration-300", isCompleted && "text-neutral-400 line-through")}>
+                                {t}
+                              </span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   </div>
@@ -251,8 +326,27 @@ export function ProjectDetail() {
               {messages.length === 0 && (
                 <div className="h-full flex flex-col items-center justify-center text-neutral-400 p-8 text-center border-2 border-dashed border-neutral-200 rounded-xl">
                   <BrainCircuit className="w-12 h-12 mb-3 text-neutral-300" />
-                  <p>I am your AI Project Mentor.</p>
-                  <p className="text-sm">Ask me any technical or architectural question about your project.</p>
+                  <p className="font-medium text-neutral-600 mb-1">I am your AI Project Mentor.</p>
+                  <p className="text-sm mb-6">Ask me any technical or architectural question about your project.</p>
+                  
+                  <div className="flex flex-wrap justify-center gap-2 max-w-lg">
+                    {[
+                      "What should I build first?",
+                      "How should I design the database?",
+                      "How do I implement authentication?",
+                      "How can I simplify my MVP?",
+                      "How should I test this project?",
+                      "What security risks should I consider?"
+                    ].map((q, i) => (
+                      <button 
+                        key={i}
+                        onClick={() => setChatInput(q)}
+                        className="bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs px-3 py-1.5 rounded-full transition-colors"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               {messages.map((msg, idx) => (

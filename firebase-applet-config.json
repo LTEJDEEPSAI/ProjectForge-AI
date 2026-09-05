@@ -1,12 +1,12 @@
 {
-  "projectId": "strong-ascent-rk9gj",
-  "appId": "1:331232775524:web:ddd2cb2e780f3a33a1fe71",
-  "apiKey": "AIzaSyDOBTngngMhydJqlXGqSaLW77skWcEmLAg",
-  "authDomain": "strong-ascent-rk9gj.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-ec78fb3d-61bf-4023-b6df-f4b7c8e4fe56",
-  "storageBucket": "strong-ascent-rk9gj.firebasestorage.app",
-  "messagingSenderId": "331232775524",
-  "measurementId": "",
-  "oAuthClientId": "331232775524-ka96jpj0k10o1b87ui5gacet1d2ebaa3.apps.googleusercontent.com",
+  "projectId": "projectforge-ai-87504",
+  "appId": "1:928377988905:web:385fd5bde2d45016f47938",
+  "apiKey": "AIzaSyAwMp48qenat4I7hjVXOuCW6YCSABm2SX4",
+  "authDomain": "projectforge-ai-87504.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "projectforge-ai-87504.firebasestorage.app",
+  "messagingSenderId": "928377988905",
+  "measurementId": "G-WNGJW9WWE1",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }

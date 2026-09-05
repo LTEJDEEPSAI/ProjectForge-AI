@@ -32,6 +32,7 @@ export interface ProjectIdea {
   challenges: string;
   realityCheck?: RealityCheck;
   blueprint?: Blueprint;
+  roadmapProgress?: Record<string, boolean>;
   createdAt?: number;
   updatedAt?: number;
 }
@@ -44,8 +45,11 @@ export interface RealityCheck {
   timeSuitability: number;
   skillMatchScore: number;
   explanation: string;
+  mentorVerdict: string;
   risks: string[];
+  skillGaps: string[];
   recommendations: string[];
+  realisticMvpScope: string;
 }
 
 export interface Blueprint {

@@ -4,7 +4,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Pickaxe, ArrowRight, ArrowLeft, Loader2, CheckCircle2, ChevronRight, Sparkles } from 'lucide-react';
+import { Pickaxe, ArrowRight, ArrowLeft, Loader2, CheckCircle2, ChevronRight, Sparkles, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProjectIdea } from '../types';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -39,8 +39,10 @@ export function Onboarding() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [generatedIdeas, setGeneratedIdeas] = useState<ProjectIdea[]>([]);
   const [selectingIdea, setSelectingIdea] = useState<string | null>(null);
+  const [selectError, setSelectError] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors }, trigger } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -63,6 +65,7 @@ export function Onboarding() {
 
   const onSubmit = async (data: FormData) => {
     setGenerating(true);
+    setGenerateError(null);
     try {
       const res = await fetch('/api/generate-projects', {
         method: 'POST',
@@ -70,12 +73,19 @@ export function Onboarding() {
         body: JSON.stringify({ formData: data }),
       });
       const result = await res.json();
-      if (result.ideas) {
-        setGeneratedIdeas(result.ideas);
+      
+      if (!res.ok) {
+        throw new Error(result.error || 'Server returned an error');
       }
-    } catch (err) {
+      
+      if (result.ideas && Array.isArray(result.ideas)) {
+        setGeneratedIdeas(result.ideas);
+      } else {
+        throw new Error('Invalid data format received from AI');
+      }
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to generate ideas. Please try again.');
+      setGenerateError(err.message || 'Failed to generate ideas. Please try again.');
     } finally {
       setGenerating(false);
     }
@@ -83,6 +93,7 @@ export function Onboarding() {
 
   const selectIdea = async (idea: ProjectIdea) => {
     setSelectingIdea(idea.title);
+    setSelectError(null);
     try {
       // 1. Reality Check
       const evalRes = await fetch('/api/evaluate-project', {
@@ -90,6 +101,7 @@ export function Onboarding() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ project: idea }),
       });
+      if (!evalRes.ok) throw new Error('Failed to evaluate project.');
       const evalResult = await evalRes.json();
 
       // 2. Blueprint
@@ -98,6 +110,7 @@ export function Onboarding() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ project: idea }),
       });
+      if (!bpRes.ok) throw new Error('Failed to generate blueprint.');
       const bpResult = await bpRes.json();
 
       // 3. Save to Firestore
@@ -106,15 +119,16 @@ export function Onboarding() {
         userId: user.uid,
         realityCheck: evalResult.evaluation,
         blueprint: bpResult.blueprint,
+        roadmapProgress: {},
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
 
       const docRef = await addDoc(collection(db, 'projects'), projectData);
       navigate(`/project/${docRef.id}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to process the selected idea.');
+      setSelectError(err.message || 'Failed to process the selected idea.');
       setSelectingIdea(null);
     }
   };
@@ -128,6 +142,16 @@ export function Onboarding() {
             We've generated these ideas based on your profile. Select one to generate a full technical blueprint and reality check.
           </p>
         </div>
+
+        {selectError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 max-w-2xl mx-auto">
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-red-800">Processing Failed</h4>
+              <p className="text-sm text-red-600 mt-1">{selectError}</p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {generatedIdeas.map((idea, idx) => (
@@ -229,6 +253,15 @@ export function Onboarding() {
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+        {generateError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-red-800">Generation Failed</h4>
+              <p className="text-sm text-red-600 mt-1">{generateError}</p>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <AnimatePresence mode="wait">
             <motion.div

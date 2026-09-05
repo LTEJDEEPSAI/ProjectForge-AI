@@ -59,7 +59,7 @@ async function startServer() {
       Difficulty: ${formData.difficulty}
       Domain: ${formData.domain}
       
-      Generate highly personalized projects that solve real problems. Do not generate generic ideas. 
+      Generate EXACTLY 5 highly personalized project ideas that solve real problems. Do not generate generic ideas. 
       Respond ONLY with a valid JSON object in the following format:
       {
         "ideas": [
@@ -96,7 +96,7 @@ async function startServer() {
       Respond ONLY with a valid JSON object in the following format:
       {
         "feasibilityScore": 0, "innovationScore": 0, "complexityScore": 0, "costScore": 0, "timeSuitability": 0, "skillMatchScore": 0,
-        "explanation": "...", "risks": ["..."], "recommendations": ["..."]
+        "explanation": "...", "mentorVerdict": "...", "risks": ["..."], "skillGaps": ["..."], "recommendations": ["..."], "realisticMvpScope": "..."
       }`;
 
       const response = await withRetry(() => openai.chat.completions.create({
