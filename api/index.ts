@@ -37,7 +37,7 @@ export const apiRouter = express.Router();
 
 // Hardcoded API key to completely bypass Vercel environment variables
 const openai = new OpenAI({
-  apiKey: 'sk-ACQOvugnS4x9a1cVCBmDYVDDWDbAQzVwDMGy6WQM2ZQfM5xy',
+  apiKey: process.env.CHATANYWHERE_API_KEY || 'sk-ACQOvugnS4x9a1cVCBmDYVDDWDbAQzVwDMGy6WQM2ZQfM5xy',
   baseURL: 'https://api.chatanywhere.org/v1'
 });
 

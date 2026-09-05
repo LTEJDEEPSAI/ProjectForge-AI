@@ -100,11 +100,11 @@ export function ProjectDetail() {
       await addDoc(collection(db, 'projects', id, 'messages'), modelMsg);
       setMessages(prev => [...prev, modelMsg]);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       const errorMsg: MentorMessage = {
         role: 'model',
-        content: `Sorry, I encountered an error: ${err.message}. Please try asking again.`,
+        content: `Sorry, I encountered an error: ${(err instanceof Error ? err.message : String(err))}. Please try asking again.`,
         createdAt: Date.now()
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -361,6 +361,7 @@ export function ProjectDetail() {
             <form onSubmit={sendMentorMessage} className="mt-auto relative shrink-0">
               <input
                 type="text"
+                aria-label="Chat input"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Ask about testing, deployment, or architecture..."

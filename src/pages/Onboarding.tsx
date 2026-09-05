@@ -44,7 +44,7 @@ export function Onboarding() {
   const [generatedIdeas, setGeneratedIdeas] = useState<ProjectIdea[]>([]);
   const [selectingIdea, setSelectingIdea] = useState<string | null>(null);
   const [selectError, setSelectError] = useState<string | null>(null);
-  const [profileData, setProfileData] = useState<any>(null);
+  const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
 
   const { register, handleSubmit, formState: { errors }, trigger } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -77,9 +77,9 @@ export function Onboarding() {
       } else {
         throw new Error('Invalid data format received from AI');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setGenerateError(err.message || 'Failed to generate ideas. Please try again.');
+      setGenerateError((err instanceof Error ? err.message : String(err)) || 'Failed to generate ideas. Please try again.');
     } finally {
       setGenerating(false);
     }
@@ -109,9 +109,9 @@ export function Onboarding() {
 
       const docRef = await addDoc(collection(db, 'projects'), projectData);
       navigate(`/project/${docRef.id}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setSelectError(err.message || 'Failed to process the selected idea.');
+      setSelectError((err instanceof Error ? err.message : String(err)) || 'Failed to process the selected idea.');
       setSelectingIdea(null);
     }
   };

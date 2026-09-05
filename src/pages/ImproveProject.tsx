@@ -25,9 +25,9 @@ export function ImproveProject() {
     try {
       const data = await fetchApi('/api/improve-project', { method: 'POST', body: JSON.stringify({ description }) });
       setAnalysis(data.improvement);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Failed to analyze project.');
+      setError((err instanceof Error ? err.message : String(err)) || 'Failed to analyze project.');
     } finally {
       setLoading(false);
     }
@@ -51,8 +51,8 @@ export function ImproveProject() {
           </div>
         )}
         <form onSubmit={handleAnalyze}>
-          <label className="block text-sm font-bold text-neutral-700 mb-2">Project Description</label>
-          <textarea
+          <label htmlFor="projectDescription" className="block text-sm font-bold text-neutral-700 mb-2">Project Description</label>
+          <textarea id="projectDescription"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe your project, the problem it solves, the features you have planned, and your tech stack..."

@@ -1,44 +1,36 @@
 const fs = require('fs');
-
 let code = fs.readFileSync('src/components/Layout.tsx', 'utf8');
 
-if (!code.includes('const [selectedModel, setSelectedModel]')) {
-  // 1. Add useState, useEffect import if not there
-  code = code.replace("import { Outlet,", "import { useState, useEffect } from 'react';\nimport { Outlet,");
+// Update Links to be icon-only on small screens to prevent overflow
+code = code.replace(
+  /<Link to="\/" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1\.5">\s*<LayoutDashboard className="w-4 h-4" \/> Dashboard\s*<\/Link>/g,
+  '<Link to="/" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5" aria-label="Dashboard"><LayoutDashboard className="w-5 h-5 sm:w-4 sm:h-4" /><span className="hidden sm:inline">Dashboard</span></Link>'
+);
 
-  // 2. Add state to Layout component
-  const stateCode = `
-  const [selectedModel, setSelectedModel] = useState(localStorage.getItem('selectedModel') || 'gpt-4o-mini');
-  
-  const handleModelChange = (e) => {
-    const val = e.target.value;
-    setSelectedModel(val);
-    localStorage.setItem('selectedModel', val);
-  };
-`;
-  code = code.replace("export function Layout() {", "export function Layout() {\n" + stateCode);
+code = code.replace(
+  /<Link to="\/onboarding" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1\.5">\s*<Lightbulb className="w-4 h-4" \/> Generate Ideas\s*<\/Link>/g,
+  '<Link to="/onboarding" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5" aria-label="Generate Ideas"><Lightbulb className="w-5 h-5 sm:w-4 sm:h-4" /><span className="hidden sm:inline">Generate Ideas</span></Link>'
+);
 
-  // 3. Add the select dropdown
-  const selectCode = `
-                  <select 
-                    value={selectedModel} 
-                    onChange={handleModelChange}
-                    className="text-sm font-medium text-neutral-600 bg-neutral-100 border border-neutral-200 rounded-md px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="gpt-4o-mini">gpt-4o-mini</option>
-                    <option value="gpt-4o">gpt-4o</option>
-                    <option value="gpt-5.4-mini">gpt-5.4-mini</option>
-                    <option value="gpt-4.1-mini">gpt-4.1-mini</option>
-                    <option value="gpt-5-mini">gpt-5-mini</option>
-                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
-                    <option value="gpt-4.1-nano">gpt-4.1-nano</option>
-                    <option value="gpt-5.4-nano">gpt-5.4-nano</option>
-                    <option value="gpt-5-nano">gpt-5-nano</option>
-                    <option value="gpt-5.6-luna">gpt-5.6-luna</option>
-                  </select>
-                  <div className="h-6 w-px bg-neutral-300 mx-2" />`;
-                  
-  code = code.replace('<div className="h-6 w-px bg-neutral-300 mx-2" />', selectCode);
-  
-  fs.writeFileSync('src/components/Layout.tsx', code);
-}
+code = code.replace(
+  /<Link to="\/improve" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1\.5">\s*<Wrench className="w-4 h-4" \/> Improve Project\s*<\/Link>/g,
+  '<Link to="/improve" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5" aria-label="Improve Project"><Wrench className="w-5 h-5 sm:w-4 sm:h-4" /><span className="hidden lg:inline">Improve Project</span></Link>'
+);
+
+code = code.replace(
+  /<select/g,
+  '<select aria-label="Select AI Model"'
+);
+
+// Ensure the header doesn't overflow
+code = code.replace(
+  /<nav className="flex items-center space-x-4">/g,
+  '<nav className="flex items-center space-x-2 sm:space-x-4">'
+);
+
+code = code.replace(
+  /<div className="flex justify-between h-16 items-center">/g,
+  '<div className="flex justify-between h-16 items-center gap-2">'
+);
+
+fs.writeFileSync('src/components/Layout.tsx', code);

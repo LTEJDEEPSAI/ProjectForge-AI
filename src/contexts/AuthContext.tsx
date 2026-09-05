@@ -52,12 +52,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login failed', error);
-      if (error?.code === 'auth/unauthorized-domain') {
+      if ((error as any)?.code === 'auth/unauthorized-domain') {
         setAuthError('unauthorized-domain');
       } else {
-        setAuthError(error?.message || 'Login failed. Please try again.');
+        setAuthError((error as any)?.message || 'Login failed. Please try again.');
       }
     }
   };

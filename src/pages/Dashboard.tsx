@@ -81,7 +81,7 @@ export function Dashboard() {
 
   return (
     <div className="py-8">
-      <div className="flex justify-between items-end mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Your Projects</h1>
           <p className="text-neutral-500 mt-1">Manage and track your generated project ideas.</p>

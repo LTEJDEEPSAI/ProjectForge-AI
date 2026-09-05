@@ -57,27 +57,21 @@ export function Layout() {
 
       <header className="bg-white border-b border-neutral-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
+          <div className="flex justify-between h-16 items-center gap-2">
             <Link to="/" className="flex items-center space-x-2">
               <div className="bg-blue-600 text-white p-1.5 rounded-lg">
                 <Pickaxe className="w-6 h-6" />
               </div>
               <span className="text-xl font-bold tracking-tight text-neutral-900">ProjectForge <span className="text-blue-600">AI</span></span>
             </Link>
-            <nav className="flex items-center space-x-4">
+            <nav className="flex items-center space-x-2 sm:space-x-4">
               {user ? (
                 <>
-                  <Link to="/" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5">
-                    <LayoutDashboard className="w-4 h-4" /> Dashboard
-                  </Link>
-                  <Link to="/onboarding" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5">
-                    <Lightbulb className="w-4 h-4" /> Generate Ideas
-                  </Link>
-                  <Link to="/improve" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5">
-                    <Wrench className="w-4 h-4" /> Improve Project
-                  </Link>
+                  <Link to="/" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5" aria-label="Dashboard"><LayoutDashboard className="w-5 h-5 sm:w-4 sm:h-4" /><span className="hidden sm:inline">Dashboard</span></Link>
+                  <Link to="/onboarding" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5" aria-label="Generate Ideas"><Lightbulb className="w-5 h-5 sm:w-4 sm:h-4" /><span className="hidden sm:inline">Generate Ideas</span></Link>
+                  <Link to="/improve" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1.5" aria-label="Improve Project"><Wrench className="w-5 h-5 sm:w-4 sm:h-4" /><span className="hidden lg:inline">Improve Project</span></Link>
                   
-                  <select 
+                  <select aria-label="Select AI Model" 
                     value={selectedModel} 
                     onChange={handleModelChange}
                     className="text-sm font-medium text-neutral-600 bg-neutral-100 border border-neutral-200 rounded-md px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
