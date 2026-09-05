@@ -276,7 +276,7 @@ app.use((req, res) => {
 });
 
 // Global Error Handler to ensure we return JSON instead of Express HTML 500
-app.use((err: any, req: any, res: any, next: any) => {
+app.use((err: any, _req: any, res: any, _next: any) => {
   console.error('Unhandled Express Error:', err);
   // Ensure we don't return HTML
   res.status(err.status || 500).json({ 

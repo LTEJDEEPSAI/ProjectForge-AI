@@ -1,11 +1,11 @@
 import { fetchApi } from '../utils/api';
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate, useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, orderBy, getDocs, addDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ProjectIdea, MentorMessage } from '../types';
-import { CheckCircle2, Circle, AlertTriangle, ArrowRight, TrendingUp, Lightbulb, Pickaxe, BrainCircuit, MessageSquare, Loader2, Send } from 'lucide-react';
+import { CheckCircle2, Circle, AlertTriangle, TrendingUp, Lightbulb, Pickaxe, BrainCircuit, Loader2, Send } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { cn } from '../lib/utils';
 
@@ -89,7 +89,7 @@ export function ProjectDetail() {
       await addDoc(collection(db, 'projects', id, 'messages'), newUserMsg);
       
       // 2. Call API
-      const data = await fetchApi('/api/mentor-chat', { method: 'POST', body: JSON.stringify({ message: userMsg, history: messages, projectContext: project, profile: project.profile }) });
+      const data = await fetchApi('/api/mentor-chat', { method: 'POST', body: JSON.stringify({ message: userMsg, history: messages, projectContext: project, profile: project?.profile }) });
       
       // 3. Save model msg to DB
       const modelMsg: MentorMessage = {

@@ -1,14 +1,14 @@
 import { fetchApi } from "../utils/api";
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Pickaxe, ArrowRight, ArrowLeft, Loader2, CheckCircle2, ChevronRight, Sparkles, AlertTriangle } from 'lucide-react';
+import { Pickaxe, ArrowLeft, Loader2, CheckCircle2, ChevronRight, Sparkles, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProjectIdea } from '../types';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { cn } from '../lib/utils';
 
@@ -258,18 +258,18 @@ export function Onboarding() {
               {currentStep === 0 && (
                 <>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">Academic Branch / Specialization</label>
-                    <input {...register('branch')} placeholder="e.g. Computer Science, Information Technology" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
+                    <label htmlFor="branch" className="block text-sm font-bold text-neutral-700 mb-1.5">Academic Branch / Specialization</label>
+<input id="branch" {...register('branch')} placeholder="e.g. Computer Science, Information Technology" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
                     {errors.branch && <p className="text-red-500 text-sm mt-1">{errors.branch.message}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">Primary Interests</label>
-                    <input {...register('interests')} placeholder="e.g. Machine Learning, Web Dev, IoT" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
+                    <label htmlFor="interests" className="block text-sm font-bold text-neutral-700 mb-1.5">Primary Interests</label>
+<input id="interests" {...register('interests')} placeholder="e.g. Machine Learning, Web Dev, IoT" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
                     {errors.interests && <p className="text-red-500 text-sm mt-1">{errors.interests.message}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">Career Aspiration</label>
-                    <input {...register('career')} placeholder="e.g. Full Stack Engineer, Data Scientist" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
+                    <label htmlFor="career" className="block text-sm font-bold text-neutral-700 mb-1.5">Career Aspiration</label>
+<input id="career" {...register('career')} placeholder="e.g. Full Stack Engineer, Data Scientist" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
                     {errors.career && <p className="text-red-500 text-sm mt-1">{errors.career.message}</p>}
                   </div>
                 </>
@@ -278,13 +278,13 @@ export function Onboarding() {
               {currentStep === 1 && (
                 <>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">Technical Skills</label>
-                    <input {...register('skills')} placeholder="e.g. Python, React, SQL, AWS" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
+                    <label htmlFor="skills" className="block text-sm font-bold text-neutral-700 mb-1.5">Technical Skills</label>
+<input id="skills" {...register('skills')} placeholder="e.g. Python, React, SQL, AWS" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
                     {errors.skills && <p className="text-red-500 text-sm mt-1">{errors.skills.message}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">General Proficiency Level</label>
-                    <select {...register('proficiency')} className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5 bg-white">
+                    <label htmlFor="proficiency" className="block text-sm font-bold text-neutral-700 mb-1.5">General Proficiency Level</label>
+<select id="proficiency" {...register('proficiency')} className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5 bg-white">
                       <option value="">Select proficiency...</option>
                       <option value="Beginner">Beginner (Familiar with syntax)</option>
                       <option value="Intermediate">Intermediate (Built some projects)</option>
@@ -293,8 +293,8 @@ export function Onboarding() {
                     {errors.proficiency && <p className="text-red-500 text-sm mt-1">{errors.proficiency.message}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">Preferred Technologies</label>
-                    <input {...register('technologies')} placeholder="e.g. Next.js, Firebase, PyTorch" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
+                    <label htmlFor="technologies" className="block text-sm font-bold text-neutral-700 mb-1.5">Preferred Technologies</label>
+<input id="technologies" {...register('technologies')} placeholder="e.g. Next.js, Firebase, PyTorch" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
                     {errors.technologies && <p className="text-red-500 text-sm mt-1">{errors.technologies.message}</p>}
                   </div>
                 </>
@@ -303,8 +303,8 @@ export function Onboarding() {
               {currentStep === 2 && (
                 <>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">Team Size</label>
-                    <select {...register('teamSize')} className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5 bg-white">
+                    <label htmlFor="teamSize" className="block text-sm font-bold text-neutral-700 mb-1.5">Team Size</label>
+<select id="teamSize" {...register('teamSize')} className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5 bg-white">
                       <option value="">Select team size...</option>
                       <option value="Individual">Individual</option>
                       <option value="2 members">2 members</option>
@@ -314,8 +314,8 @@ export function Onboarding() {
                     {errors.teamSize && <p className="text-red-500 text-sm mt-1">{errors.teamSize.message}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">Time Available (approx)</label>
-                    <select {...register('timeAvailable')} className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5 bg-white">
+                    <label htmlFor="timeAvailable" className="block text-sm font-bold text-neutral-700 mb-1.5">Time Available (approx)</label>
+<select id="timeAvailable" {...register('timeAvailable')} className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5 bg-white">
                       <option value="">Select time...</option>
                       <option value="1-2 months">1-2 months</option>
                       <option value="3-4 months (one semester)">3-4 months (one semester)</option>
@@ -324,8 +324,8 @@ export function Onboarding() {
                     {errors.timeAvailable && <p className="text-red-500 text-sm mt-1">{errors.timeAvailable.message}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">Approximate Budget</label>
-                    <select {...register('budget')} className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5 bg-white">
+                    <label htmlFor="budget" className="block text-sm font-bold text-neutral-700 mb-1.5">Approximate Budget</label>
+<select id="budget" {...register('budget')} className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5 bg-white">
                       <option value="">Select budget...</option>
                       <option value="$0 (Free tier only)">$0 (Free tier only)</option>
                       <option value="<$50">Under $50</option>
@@ -340,8 +340,8 @@ export function Onboarding() {
               {currentStep === 3 && (
                 <>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">Preferred Difficulty</label>
-                    <select {...register('difficulty')} className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5 bg-white">
+                    <label htmlFor="difficulty" className="block text-sm font-bold text-neutral-700 mb-1.5">Preferred Difficulty</label>
+<select id="difficulty" {...register('difficulty')} className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5 bg-white">
                       <option value="">Select difficulty...</option>
                       <option value="Safe & Standard">Safe & Standard (High chance of completion)</option>
                       <option value="Moderate Challenge">Moderate Challenge (Learn some new things)</option>
@@ -350,8 +350,8 @@ export function Onboarding() {
                     {errors.difficulty && <p className="text-red-500 text-sm mt-1">{errors.difficulty.message}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-1.5">Target Domain / Industry</label>
-                    <input {...register('domain')} placeholder="e.g. Healthcare, Education, FinTech, Sustainability" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
+                    <label htmlFor="domain" className="block text-sm font-bold text-neutral-700 mb-1.5">Target Domain / Industry</label>
+<input id="domain" {...register('domain')} placeholder="e.g. Healthcare, Education, FinTech, Sustainability" className="w-full rounded-lg border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2.5" />
                     {errors.domain && <p className="text-red-500 text-sm mt-1">{errors.domain.message}</p>}
                   </div>
                 </>

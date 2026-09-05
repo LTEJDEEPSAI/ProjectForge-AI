@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ProjectIdea } from '../types';
 import { Link } from 'react-router-dom';
-import { Pickaxe, ArrowRight, Lightbulb, TrendingUp, Trash2, Clock, CheckCircle2 } from 'lucide-react';
+import { Pickaxe, ArrowRight, Lightbulb, TrendingUp, Trash2, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function Dashboard() {
