@@ -6,10 +6,22 @@ dotenv.config();
 
 export const apiRouter = express.Router();
 
+const isStandardOpenAI = !!process.env.OPENAI_API_KEY && !process.env.CHATANYWHERE_API_KEY;
 const openai = new OpenAI({
-  apiKey: process.env.CHATANYWHERE_API_KEY || 'MISSING_API_KEY',
-  baseURL: 'https://api.chatanywhere.org/v1'
+  apiKey: process.env.CHATANYWHERE_API_KEY || process.env.OPENAI_API_KEY || 'sk-ACQOvugnS4x9a1cVCBmDYVDDWDbAQzVwDMGy6WQM2ZQfM5xy',
+  baseURL: isStandardOpenAI ? undefined : 'https://api.chatanywhere.org/v1'
 });
+
+function formatApiError(error: any) {
+  const msg = error?.message || '';
+  if (msg.includes('401') || error?.status === 401 || msg.includes('ApiKey错误') || msg.includes('wrong api key')) {
+    return "Invalid API Key: The AI service rejected your API key. Please check your Vercel Environment Variables and ensure the key is active and correct.";
+  }
+  if (msg.includes('429') || error?.status === 429) {
+    return "Rate Limit Exceeded: You have made too many requests or your API account is out of credits.";
+  }
+  return msg || "Failed to process AI request.";
+}
 
 async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4, baseDelayMs = 2000): Promise<T> {
   let attempt = 0;
@@ -97,7 +109,7 @@ Respond ONLY with a valid JSON object in the following format:
     res.json({ success: true, ideas: ideasData.ideas });
   } catch (error: any) {
     console.error('Error generating projects:', error);
-    res.status(500).json({ success: false, error: { message: error.message || 'Failed to generate projects', code: 'GENERATE_FAILED' } });
+    res.status(500).json({ success: false, error: { message: formatApiError(error), code: 'GENERATE_FAILED' } });
   }
 });
 
@@ -135,7 +147,7 @@ Respond ONLY with a valid JSON object in the following format:
     res.json({ success: true, evaluation });
   } catch (error: any) {
     console.error('Error evaluating project:', error);
-    res.status(500).json({ success: false, error: { message: error.message || 'Failed to evaluate project', code: 'EVALUATE_FAILED' } });
+    res.status(500).json({ success: false, error: { message: formatApiError(error), code: 'EVALUATE_FAILED' } });
   }
 });
 
@@ -174,7 +186,7 @@ Respond ONLY with a valid JSON object in the following format:
     res.json({ success: true, blueprint });
   } catch (error: any) {
     console.error('Error generating blueprint:', error);
-    res.status(500).json({ success: false, error: { message: error.message || 'Failed to generate blueprint', code: 'BLUEPRINT_FAILED' } });
+    res.status(500).json({ success: false, error: { message: formatApiError(error), code: 'BLUEPRINT_FAILED' } });
   }
 });
 
@@ -214,7 +226,7 @@ INSTRUCTIONS:
     res.json({ success: true, reply: response.choices[0].message.content });
   } catch (error: any) {
     console.error('Error in mentor chat:', error);
-    res.status(500).json({ success: false, error: { message: error.message || 'Failed to respond to chat', code: 'MENTOR_FAILED' } });
+    res.status(500).json({ success: false, error: { message: formatApiError(error), code: 'MENTOR_FAILED' } });
   }
 });
 
@@ -246,7 +258,7 @@ Respond ONLY with a valid JSON object in the following format:
     res.json({ success: true, improvement });
   } catch (error: any) {
     console.error('Error improving project:', error);
-    res.status(500).json({ success: false, error: { message: error.message || 'Failed to analyze project', code: 'IMPROVE_FAILED' } });
+    res.status(500).json({ success: false, error: { message: formatApiError(error), code: 'IMPROVE_FAILED' } });
   }
 });
 
