@@ -67,16 +67,7 @@ export function Onboarding() {
     setGenerating(true);
     setGenerateError(null);
     try {
-      const res = await fetch('/api/generate-projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formData: data }),
-      });
-      const result = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(result.error || 'Server returned an error');
-      }
+      const result = await fetchApi('/api/generate-projects', { method: 'POST', body: JSON.stringify({ formData: data }) });
       
       if (result.ideas && Array.isArray(result.ideas)) {
         setGeneratedIdeas(result.ideas);
@@ -96,22 +87,10 @@ export function Onboarding() {
     setSelectError(null);
     try {
       // 1. Reality Check
-      const evalRes = await fetch('/api/evaluate-project', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project: idea }),
-      });
-      if (!evalRes.ok) throw new Error('Failed to evaluate project.');
-      const evalResult = await evalRes.json();
+      const evalResult = await fetchApi('/api/evaluate-project', { method: 'POST', body: JSON.stringify({ project: idea }) });
 
       // 2. Blueprint
-      const bpRes = await fetch('/api/generate-blueprint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project: idea }),
-      });
-      if (!bpRes.ok) throw new Error('Failed to generate blueprint.');
-      const bpResult = await bpRes.json();
+      const bpResult = await fetchApi('/api/generate-blueprint', { method: 'POST', body: JSON.stringify({ project: idea }) });
 
       // 3. Save to Firestore
       const projectData = {

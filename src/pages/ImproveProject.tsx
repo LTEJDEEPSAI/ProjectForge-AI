@@ -1,3 +1,4 @@
+import { fetchApi } from '../utils/api';
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -22,13 +23,7 @@ export function ImproveProject() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/improve-project', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to analyze project.');
+      const data = await fetchApi('/api/improve-project', { method: 'POST', body: JSON.stringify({ description }) });
       setAnalysis(data.improvement);
     } catch (err: any) {
       console.error(err);

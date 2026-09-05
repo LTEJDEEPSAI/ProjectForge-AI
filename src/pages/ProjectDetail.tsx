@@ -1,3 +1,4 @@
+import { fetchApi } from '../utils/api';
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate, useParams } from 'react-router-dom';
@@ -88,24 +89,7 @@ export function ProjectDetail() {
       await addDoc(collection(db, 'projects', id, 'messages'), newUserMsg);
       
       // 2. Call API
-      const res = await fetch('/api/mentor-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMsg,
-          history: messages,
-          projectContext: {
-            title: project?.title,
-            concept: project?.concept,
-            techStack: project?.techStack
-          }
-        }),
-      });
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to get mentor response');
-      }
+      const data = await fetchApi('/api/mentor-chat', { method: 'POST', body: JSON.stringify({ message: userMsg, history: messages, projectContext: project }) });
       
       // 3. Save model msg to DB
       const modelMsg: MentorMessage = {
