@@ -6,10 +6,10 @@ dotenv.config();
 
 export const apiRouter = express.Router();
 
-const isStandardOpenAI = !!process.env.OPENAI_API_KEY && !process.env.CHATANYWHERE_API_KEY;
+// Hardcoded API key to completely bypass Vercel environment variables
 const openai = new OpenAI({
-  apiKey: process.env.CHATANYWHERE_API_KEY || process.env.OPENAI_API_KEY || 'sk-ACQOvugnS4x9a1cVCBmDYVDDWDbAQzVwDMGy6WQM2ZQfM5xy',
-  baseURL: isStandardOpenAI ? undefined : 'https://api.chatanywhere.org/v1'
+  apiKey: 'sk-ACQOvugnS4x9a1cVCBmDYVDDWDbAQzVwDMGy6WQM2ZQfM5xy',
+  baseURL: 'https://api.chatanywhere.org/v1'
 });
 
 function formatApiError(error: any) {
