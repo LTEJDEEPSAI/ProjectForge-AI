@@ -1,4 +1,33 @@
 import express from 'express';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import firebaseConfig from '../firebase-applet-config.json' with { type: 'json' };
+
+// Initialize Firebase Admin (only once)
+if (!getApps().length) {
+  initializeApp({
+    projectId: firebaseConfig.projectId
+  });
+}
+
+// Authentication Middleware
+const authenticateToken = async (req: any, res: any, next: any) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: { message: 'Unauthorized: Missing or invalid token', code: 'UNAUTHORIZED' } });
+  }
+
+  const token = authHeader.split('Bearer ')[1];
+  try {
+    const decodedToken = await getAuth().verifyIdToken(token);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    console.error('Error verifying auth token:', error);
+    return res.status(401).json({ success: false, error: { message: 'Unauthorized: Invalid token', code: 'UNAUTHORIZED' } });
+  }
+};
+
 import OpenAI from 'openai';
 import * as dotenv from 'dotenv';
 
@@ -59,7 +88,8 @@ function extractJson(content: string) {
   }
 }
 
-apiRouter.post('/generate-projects', async (req, res) => {
+apiRouter.post('/generate-projects', authenticateToken, async (req: any, res: any) => {
+    if (!req.body.profile) return res.status(400).json({ success: false, error: 'Missing profile' });
   try {
     const { formData } = req.body;
     const prompt = `You are an expert final-year project mentor, software architect, and technical evaluator.
@@ -113,7 +143,8 @@ Respond ONLY with a valid JSON object in the following format:
   }
 });
 
-apiRouter.post('/evaluate-project', async (req, res) => {
+apiRouter.post('/evaluate-project', authenticateToken, async (req: any, res: any) => {
+    if (!req.body.project || !req.body.profile) return res.status(400).json({ success: false, error: 'Missing data' });
   try {
     const { project, profile } = req.body;
     const prompt = `You are a strict technical evaluator. Perform a reality check on this project idea based strictly on the student's profile constraints.
@@ -151,7 +182,8 @@ Respond ONLY with a valid JSON object in the following format:
   }
 });
 
-apiRouter.post('/generate-blueprint', async (req, res) => {
+apiRouter.post('/generate-blueprint', authenticateToken, async (req: any, res: any) => {
+    if (!req.body.project || !req.body.profile) return res.status(400).json({ success: false, error: 'Missing data' });
   try {
     const { project, profile } = req.body;
     const prompt = `You are a software architect. Create a comprehensive, production-ready project blueprint specifically for this final-year project.
@@ -190,7 +222,8 @@ Respond ONLY with a valid JSON object in the following format:
   }
 });
 
-apiRouter.post('/mentor-chat', async (req, res) => {
+apiRouter.post('/mentor-chat', authenticateToken, async (req: any, res: any) => {
+    if (!req.body.message || !req.body.history || !req.body.projectContext || !req.body.profile) return res.status(400).json({ success: false, error: 'Missing data' });
   try {
     const { message, history, projectContext, profile } = req.body;
     const systemInstruction = `You are an expert project mentor and senior developer guiding a student.
@@ -230,7 +263,8 @@ INSTRUCTIONS:
   }
 });
 
-apiRouter.post('/improve-project', async (req, res) => {
+apiRouter.post('/improve-project', authenticateToken, async (req: any, res: any) => {
+    if (!req.body.description) return res.status(400).json({ success: false, error: 'Missing description' });
   try {
     const { description } = req.body;
     const prompt = `You are a rigorous technical evaluator. Analyze this existing project idea: "${description}".
@@ -262,8 +296,17 @@ Respond ONLY with a valid JSON object in the following format:
   }
 });
 
+import rateLimit from 'express-rate-limit';
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests from this IP, please try again after 15 minutes' } }
+});
+
 const app = express();
-app.use(express.json());
+app.use('/api', apiLimiter);
+app.use(express.json({ limit: '1mb' }));
 
 // Vercel rewrites might pass /api/generate-projects or /generate-projects
 // Mount on both to be safe
@@ -283,7 +326,7 @@ app.use((err: any, _req: any, res: any, _next: any) => {
     success: false, 
     error: { 
       code: 'SERVER_ERROR', 
-      message: err.message || 'Internal server error' 
+      message: 'Internal server error' 
     } 
   });
 });

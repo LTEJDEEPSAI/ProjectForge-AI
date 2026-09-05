@@ -1,5 +1,12 @@
+import { auth } from "../firebase";
 export async function fetchApi(url: string, options?: RequestInit) {
     // Inject selected model if body is JSON
+  
+  let token = '';
+  if (auth.currentUser) {
+    token = await auth.currentUser.getIdToken();
+  }
+
   let modifiedOptions = { ...options };
   if (modifiedOptions?.body && typeof modifiedOptions.body === 'string') {
     try {
@@ -13,6 +20,7 @@ export async function fetchApi(url: string, options?: RequestInit) {
     ...modifiedOptions,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
