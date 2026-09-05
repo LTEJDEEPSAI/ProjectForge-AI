@@ -1,4 +1,5 @@
 import express from 'express';
+import { z } from 'zod';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import firebaseConfig from '../firebase-applet-config.json' with { type: 'json' };
@@ -33,7 +34,43 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-export const apiRouter = express.Router();
+export 
+const profileSchema = z.object({
+  branch: z.string().max(200),
+  interests: z.string().max(200),
+  skills: z.string().max(500),
+  proficiency: z.string().max(50),
+  career: z.string().max(200),
+  technologies: z.string().max(500),
+  teamSize: z.string().max(50),
+  timeAvailable: z.string().max(50),
+  budget: z.string().max(50),
+  difficulty: z.string().max(50),
+  domain: z.string().max(200),
+}).passthrough();
+
+const generateProjectsSchema = z.object({
+  formData: profileSchema
+});
+
+const evaluateProjectSchema = z.object({
+  project: z.record(z.string(), z.any()),
+  profile: z.record(z.string(), z.any())
+});
+
+const mentorMessageSchema = z.object({
+  role: z.enum(['user', 'model', 'system', 'assistant']),
+  content: z.string().max(4000)
+});
+
+const mentorChatSchema = z.object({
+  message: z.string().max(2000),
+  history: z.array(mentorMessageSchema).max(50),
+  projectContext: z.record(z.string(), z.any()),
+  profile: z.record(z.string(), z.any())
+});
+
+const apiRouter = express.Router();
 
 // Hardcoded API key to completely bypass Vercel environment variables
 const openai = new OpenAI({
@@ -92,6 +129,8 @@ apiRouter.post('/generate-projects', authenticateToken, async (req: any, res: an
     if (!req.body.profile) return res.status(400).json({ success: false, error: 'Missing profile' });
   try {
     const { formData } = req.body;
+    generateProjectsSchema.parse({ formData });
+    if (JSON.stringify(formData).length > 10000) return res.status(400).json({ success: false, error: 'Profile too large' });
     const prompt = `You are an expert final-year project mentor, software architect, and technical evaluator.
 Your job is to recommend exactly 5 projects that are genuinely useful, technically realistic, achievable within the student's constraints, and aligned with their skills and career goals.
 
@@ -147,6 +186,8 @@ apiRouter.post('/evaluate-project', authenticateToken, async (req: any, res: any
     if (!req.body.project || !req.body.profile) return res.status(400).json({ success: false, error: 'Missing data' });
   try {
     const { project, profile } = req.body;
+    evaluateProjectSchema.parse({ project, profile });
+    if (JSON.stringify(project).length > 20000 || JSON.stringify(profile).length > 10000) return res.status(400).json({ success: false, error: 'Payload too large' });
     const prompt = `You are a strict technical evaluator. Perform a reality check on this project idea based strictly on the student's profile constraints.
 
 STUDENT PROFILE:
@@ -186,6 +227,8 @@ apiRouter.post('/generate-blueprint', authenticateToken, async (req: any, res: a
     if (!req.body.project || !req.body.profile) return res.status(400).json({ success: false, error: 'Missing data' });
   try {
     const { project, profile } = req.body;
+    evaluateProjectSchema.parse({ project, profile });
+    if (JSON.stringify(project).length > 20000 || JSON.stringify(profile).length > 10000) return res.status(400).json({ success: false, error: 'Payload too large' });
     const prompt = `You are a software architect. Create a comprehensive, production-ready project blueprint specifically for this final-year project.
 
 STUDENT PROFILE:
@@ -226,6 +269,9 @@ apiRouter.post('/mentor-chat', authenticateToken, async (req: any, res: any) => 
     if (!req.body.message || !req.body.history || !req.body.projectContext || !req.body.profile) return res.status(400).json({ success: false, error: 'Missing data' });
   try {
     const { message, history, projectContext, profile } = req.body;
+    mentorChatSchema.parse({ message, history, projectContext, profile });
+    if (history.length > 50) return res.status(400).json({ success: false, error: 'History too long' });
+    if (message.length > 2000) return res.status(400).json({ success: false, error: 'Message too long' });
     const systemInstruction = `You are an expert project mentor and senior developer guiding a student.
     
 STUDENT PROFILE:
@@ -267,6 +313,7 @@ apiRouter.post('/improve-project', authenticateToken, async (req: any, res: any)
     if (!req.body.description) return res.status(400).json({ success: false, error: 'Missing description' });
   try {
     const { description } = req.body;
+    if (typeof description !== 'string' || description.length > 5000) return res.status(400).json({ success: false, error: 'Description too long or invalid' });
     const prompt = `You are a rigorous technical evaluator. Analyze this existing project idea: "${description}".
     
 INSTRUCTIONS:
@@ -331,4 +378,5 @@ app.use((err: any, _req: any, res: any, _next: any) => {
   });
 });
 
+export { apiRouter };
 export default app;
