@@ -1,3 +1,4 @@
+import { fetchApi } from "../utils/api";
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
