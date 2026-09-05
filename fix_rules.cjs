@@ -1,4 +1,6 @@
-rules_version = '2';
+const fs = require('fs');
+
+let rules = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
@@ -61,3 +63,6 @@ service cloud.firestore {
     }
   }
 }
+`;
+
+fs.writeFileSync('firestore.rules', rules);
