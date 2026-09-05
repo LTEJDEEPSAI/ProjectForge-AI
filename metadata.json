@@ -1,0 +1,6 @@
+{
+  "name": "ProjectForge AI",
+  "description": "AI Project Idea Generator & Mentor for Final-Year Projects",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

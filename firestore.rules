@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Primitive Helpers
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function incoming() {
+      return request.resource.data;
+    }
+    function existing() {
+      return resource.data;
+    }
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Validation Helpers
+    function isValidUser(data) {
+      return data.keys().hasAll(['createdAt', 'updatedAt'])
+        && data.createdAt is number
+        && data.updatedAt is number
+        && data.size() >= 2;
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['userId', 'title', 'createdAt', 'updatedAt'])
+        && data.userId == request.auth.uid
+        && data.title is string && data.title.size() <= 200
+        && data.createdAt is number
+        && data.updatedAt is number;
+    }
+
+    function isValidMentorMessage(data) {
+      return data.keys().hasAll(['role', 'content', 'createdAt'])
+        && data.role in ['user', 'model']
+        && data.content is string
+        && data.createdAt is number;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() 
+        && isOwner(userId) 
+        && isValidId(userId)
+        && isValidUser(incoming());
+      allow update: if isSignedIn() 
+        && isOwner(userId)
+        && isValidId(userId)
+        && isValidUser(incoming());
+      allow delete: if false;
+    }
+
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidId(projectId)
+        && isValidProject(incoming());
+      allow update: if isSignedIn()
+        && isValidId(projectId)
+        && existing().userId == request.auth.uid
+        && isValidProject(incoming())
+        && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(projectId) && existing().userId == request.auth.uid;
+      
+      match /messages/{messageId} {
+        allow get: if isSignedIn() 
+          && isValidId(projectId) 
+          && isValidId(messageId)
+          && get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+        allow list: if isSignedIn()
+          && isValidId(projectId)
+          && get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid;
+        allow create: if isSignedIn()
+          && isValidId(projectId)
+          && isValidId(messageId)
+          && get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid
+          && isValidMentorMessage(incoming());
+        allow update: if false; // Messages are immutable
+        allow delete: if false;
+      }
+    }
+  }
+}
